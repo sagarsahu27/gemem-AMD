@@ -1,0 +1,21 @@
+[project]
+name = "amd-heterogeneous-programming"
+version = "0.1.0"
+description = "Learn heterogeneous programming on AMD Ryzen AI (CPU + GPU + NPU)"
+requires-python = ">=3.11"
+dependencies = [
+    "pyopencl",
+    "onnxruntime-directml",
+    "numpy",
+    "psutil",
+    "tabulate",
+    "wmi",
+    "pywin32",
+]
+
+[project.optional-dependencies]
+# NPU support requires AMD Ryzen AI Software SDK (installed separately)
+# See: https://ryzenai.docs.amd.com/en/latest/inst.html
+dev = [
+    "onnx",
+]
