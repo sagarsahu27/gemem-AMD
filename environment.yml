@@ -1,0 +1,16 @@
+name: amd-hetero
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python>=3.11
+  - numpy
+  - psutil
+  - tabulate
+  - pip
+  - pip:
+      - pyopencl
+      - onnxruntime-directml
+      - wmi
+      - pywin32
+      - onnx

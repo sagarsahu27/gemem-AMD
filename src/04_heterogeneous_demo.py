@@ -8,7 +8,7 @@ in your AMD Ryzen AI 7 PRO 350 system:
   - GPU: OpenCL kernel / ONNX Runtime DmlExecutionProvider (DirectML)
   - NPU: ONNX Runtime VitisAIExecutionProvider (if available)
 
-Run: uv run python src/04_heterogeneous_demo.py
+Run: conda run -n ryzen-ai-1.7.1 python src/04_heterogeneous_demo.py
 """
 
 import time
@@ -25,7 +25,7 @@ def create_test_onnx_model(M=512, K=512, N=512) -> str:
     try:
         import onnxruntime  # noqa: F401 - just checking availability
     except ImportError:
-        raise RuntimeError("onnxruntime is required. Install with: uv add onnxruntime-directml")
+        raise RuntimeError("onnxruntime is required. Install with: pip install onnxruntime-directml")
 
     # Build ONNX model manually using numpy protobuf
     # We'll use onnx library if available, otherwise create manually
@@ -45,7 +45,7 @@ def create_test_onnx_model(M=512, K=512, N=512) -> str:
         graph = helper.make_graph([matmul_node, relu_node], "test_matmul_relu",
                                   [X], [Y], [W])
         model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
-        model.ir_version = 7
+        model.ir_version = 8
 
         path = os.path.join(tempfile.gettempdir(), "amd_hetero_test.onnx")
         onnx.save(model, path)
@@ -286,6 +286,12 @@ def benchmark_npu(model_path: str, M=512, K=512, iterations=20):
         print("    See: https://ryzenai.docs.amd.com/en/latest/inst.html")
         return None
 
+    # Set xclbin firmware path if not already set
+    if not os.environ.get("XLNX_VART_FIRMWARE"):
+        xclbin = r"C:\Windows\System32\AMD\AMD_AIE2P_Nx4_Overlay_3.5.0.0-2353_ipu_2.xclbin"
+        if os.path.exists(xclbin):
+            os.environ["XLNX_VART_FIRMWARE"] = xclbin
+
     session = ort.InferenceSession(model_path, providers=["VitisAIExecutionProvider"])
     X = np.random.randn(M, K).astype(np.float32)
 
@@ -340,7 +346,7 @@ def main():
         model_path = create_test_onnx_model(M, K, N)
     except Exception as e:
         print(f"\n  Could not create ONNX model: {e}")
-        print("  Install 'onnx' package for ONNX benchmarks: uv add onnx")
+        print("  Install 'onnx' package for ONNX benchmarks: pip install onnx")
 
     cpu_ort_time = benchmark_cpu_onnxrt(model_path, M, K, iterations)
     gpu_dml_time = benchmark_gpu_directml(model_path, M, K, iterations)

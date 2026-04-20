@@ -7,7 +7,7 @@ Explores your AMD XDNA 2 Neural Processing Unit:
   3. NPU capabilities and architecture overview
   4. Simple inference test (if NPU runtime is available)
 
-Run: uv run python src/03_npu_config.py
+Run: conda run -n ryzen-ai-1.7.1 python src/03_npu_config.py
 
 NOTE: Full NPU acceleration requires the AMD Ryzen AI Software SDK.
       Download from: https://ryzenai.docs.amd.com/en/latest/
@@ -175,7 +175,7 @@ def check_onnxrt_providers():
 
     except ImportError:
         print("  ONNX Runtime not installed.")
-        print("  Install with: uv add onnxruntime-directml")
+        print("  Install with: pip install onnxruntime-directml")
         return []
 
 
@@ -195,17 +195,18 @@ def test_npu_inference(providers: list):
   This is required to run inference on the AMD XDNA 2 NPU.
 
   To enable NPU acceleration:
-  1. Download AMD Ryzen AI Software from:
+  1. Install AMD Ryzen AI Software SDK 1.7.1 from:
      https://ryzenai.docs.amd.com/en/latest/inst.html
 
   2. Install the NPU driver (included in Ryzen AI Software)
 
-  3. Install the Python packages:
-     pip install vitis-ai-execution-provider
-     # or follow the Ryzen AI SDK installation guide
+  3. Install SDK wheels into a conda env (Python 3.12):
+     pip install --no-deps <SDK_PATH>/onnxruntime_vitisai-*.whl
+     pip install --no-deps <SDK_PATH>/voe-*.whl
+     pip install numpy<2 protobuf flatbuffers coloredlogs packaging sympy
 
   4. Set environment variables:
-     $env:XLNX_VART_FIRMWARE = "C:\\path\\to\\xclbin\\file"
+     $env:XLNX_VART_FIRMWARE = "C:\Windows\System32\AMD\AMD_AIE2P_Nx4_Overlay_3.5.0.0-2353_ipu_2.xclbin"
 
   Once installed, you can run ONNX models on the NPU like this:
 
@@ -223,16 +224,40 @@ def test_npu_inference(providers: list):
     - Sustained low-power AI workloads
 """)
     else:
-        print("  VitisAI EP detected! Testing NPU inference...")
+        print("  VitisAI EP detected! Running NPU inference test...")
         try:
             import onnxruntime as ort
             import numpy as np
 
-            # Create a minimal ONNX model for testing
-            session_options = ort.SessionOptions()
-            # This would require an actual ONNX model - placeholder
-            print("  NPU EP is available and ready for model inference.")
-            print("  Use ort.InferenceSession('model.onnx', providers=['VitisAIExecutionProvider'])")
+            # Create a minimal ONNX model: Y = ReLU(X @ W)
+            try:
+                import onnx
+                from onnx import helper, TensorProto
+                import tempfile, os
+
+                X = helper.make_tensor_value_info('X', TensorProto.FLOAT, [1, 64])
+                Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, [1, 64])
+                W = helper.make_tensor('W', TensorProto.FLOAT, [64, 64],
+                    np.random.randn(64, 64).astype(np.float32).flatten().tolist())
+                matmul = helper.make_node('MatMul', ['X', 'W'], ['matmul_out'])
+                relu = helper.make_node('Relu', ['matmul_out'], ['Y'])
+                graph = helper.make_graph([matmul, relu], 'npu_test', [X], [Y], [W])
+                model = helper.make_model(graph, opset_imports=[helper.make_opsetid('', 13)])
+                model.ir_version = 8
+
+                tmp_path = os.path.join(tempfile.gettempdir(), 'npu_test.onnx')
+                onnx.save(model, tmp_path)
+
+                sess = ort.InferenceSession(tmp_path, providers=['VitisAIExecutionProvider'])
+                inp = np.random.randn(1, 64).astype(np.float32)
+                result = sess.run(None, {'X': inp})
+                print(f"  Inference SUCCESS! Output shape: {result[0].shape}")
+                print(f"  Active providers: {sess.get_providers()}")
+
+                os.remove(tmp_path)
+            except ImportError:
+                print("  onnx package not installed - install with: pip install onnx")
+                print("  VitisAI EP is available and ready for model inference.")
         except Exception as e:
             print(f"  Error testing NPU: {e}")
 
