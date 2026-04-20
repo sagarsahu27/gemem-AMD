@@ -13,13 +13,18 @@ which has three compute units: CPU (Zen 5), GPU (RDNA 3.5), and NPU (XDNA 2).
 
 ## Quick Start
 
-```powershell
-# One-command setup
-.\setup_env.ps1
+The project uses the **`ryzen-ai-1.7.1`** conda environment (created by the AMD Ryzen AI SDK installer),
+which includes all three execution providers: CPU, DirectML (GPU), and VitisAI (NPU).
 
-# Or manually:
-uv sync
-uv run python src/01_system_overview.py
+```powershell
+# Activate the Ryzen AI SDK environment
+conda activate ryzen-ai-1.7.1
+
+# Run the scripts
+python src/01_system_overview.py
+python src/02_gpu_config.py
+python src/03_npu_config.py
+python src/04_heterogeneous_demo.py
 ```
 
 ## Sample Scripts
@@ -50,17 +55,34 @@ uv run python src/01_system_overview.py
 
 ## Enabling NPU Acceleration
 
-The NPU requires the AMD Ryzen AI Software SDK:
+The NPU requires the AMD Ryzen AI Software SDK 1.7.1:
 
-1. Download from https://ryzenai.docs.amd.com/en/latest/inst.html
-2. Install the NPU driver + runtime
-3. Install the Python EP: `pip install vitis-ai-execution-provider`
-4. Set: `$env:XLNX_VART_FIRMWARE = "C:\path\to\xclbin"`
+1. Download and install from https://ryzenai.docs.amd.com/en/latest/inst.html
+2. The installer creates the `ryzen-ai-1.7.1` conda environment with all SDK wheels
+3. Install additional packages for this project:
+   ```powershell
+   conda run -n ryzen-ai-1.7.1 pip install pyopencl wmi pywin32
+   ```
+4. Set firmware path (auto-detected by scripts, or set manually):
+   ```powershell
+   $env:XLNX_VART_FIRMWARE = "C:\Windows\System32\AMD\AMD_AIE2P_Nx4_Overlay_3.5.0.0-2353_ipu_2.xclbin"
+   ```
+5. Verify:
+   ```powershell
+   conda run -n ryzen-ai-1.7.1 python -c "import onnxruntime as ort; print(ort.get_available_providers())"
+   # Should show: ['VitisAIExecutionProvider', 'DmlExecutionProvider', 'CPUExecutionProvider']
+   ```
 
 ## Dependencies
 
-Managed via `uv` (see `pyproject.toml`):
-- `numpy` — array computing
+Managed via the **Ryzen AI SDK** conda environment `ryzen-ai-1.7.1`.
+
+Additional packages installed for this project:
 - `pyopencl` — OpenCL GPU compute
-- `onnxruntime-directml` — ML inference on CPU + GPU (DirectML)
-- `psutil`, `wmi`, `tabulate` — system detection and formatting
+- `wmi`, `pywin32` — Windows system detection
+
+Included in the SDK environment:
+- `numpy` — array computing
+- `onnxruntime-vitisai` — ML inference on CPU + GPU (DirectML) + NPU (VitisAI)
+- `onnx` — model creation and manipulation
+- `tabulate`, `psutil` — formatting and system info

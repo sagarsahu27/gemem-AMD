@@ -6,7 +6,7 @@ Detects and reports all compute units in your AMD Ryzen AI system:
   - GPU (RDNA 3.5 integrated graphics)
   - NPU (XDNA 2 AI accelerator)
 
-Run: uv run python src/01_system_overview.py
+Run: conda run -n ryzen-ai-1.7.1 python src/01_system_overview.py
 """
 
 import platform

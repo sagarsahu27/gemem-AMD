@@ -6,7 +6,7 @@ Explores your AMD Radeon 860M (RDNA 3.5) integrated GPU capabilities:
   2. DirectML availability and device enumeration
   3. Simple GPU compute benchmark (matrix multiply via OpenCL)
 
-Run: uv run python src/02_gpu_config.py
+Run: conda run -n ryzen-ai-1.7.1 python src/02_gpu_config.py
 """
 
 import sys
