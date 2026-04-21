@@ -31,3 +31,6 @@ Desktop.ini
 
 # Logs
 *.log
+
+# VitisAI generated
+original-*-signature.txt
