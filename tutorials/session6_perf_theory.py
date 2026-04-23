@@ -17,7 +17,6 @@ Run: conda run -n ryzen-ai-1.7.1 --no-capture-output python tutorials/session6_p
 import numpy as np
 import pyopencl as cl
 import time
-import os
 
 
 def get_gpu_context():

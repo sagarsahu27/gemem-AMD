@@ -485,9 +485,9 @@ def demo_quantization():
   INT8: 1 byte per weight,  ~50 TOPS on NPU  ← 6x more throughput!
   Plus: 4x less memory, 4x less bandwidth
 
-  Quantization formula:
-  ─────────────────────
-  int8_value = round(float_value / scale) + zero_point
+  Quantization formula (asymmetric, uint8 range [0, 255]):
+  ────────────────────────────────────────────────────────
+  uint8_value = round(float_value / scale) + zero_point
 
   where:
     scale = (max_float - min_float) / 255
@@ -560,6 +560,7 @@ def demo_quantization():
 
     # Step 3: Try ONNX Runtime quantization if available
     print(f"\n  Step 3: ONNX Runtime quantization")
+    int8_path = None
     try:
         from onnxruntime.quantization import quantize_dynamic, QuantType
         int8_path = os.path.join(TEMP_DIR, "int8_model.onnx")
@@ -596,11 +597,14 @@ def demo_quantization():
         print(f"    Speed (CPU): FP32={np.mean(fp32_times)*1e6:.0f}us, "
               f"INT8={np.mean(int8_times)*1e6:.0f}us")
 
-        os.remove(int8_path)
+        del sess_fp32, sess_int8
     except ImportError:
         print("    onnxruntime.quantization not available — showing manual quantization only")
-
-    os.remove(fp32_path)
+    finally:
+        if int8_path and os.path.exists(int8_path):
+            os.remove(int8_path)
+        if os.path.exists(fp32_path):
+            os.remove(fp32_path)
 
     print("""
   Quantization types:
@@ -723,10 +727,11 @@ def demo_onnx_profiling():
             print(f"  {'TOTAL':>30s} {total_us:>10.1f}")
         else:
             print("  (No node-level timing data in profile)")
-
-        os.remove(profile_file)
     except Exception as e:
         print(f"  Profile parsing: {e}")
+    finally:
+        if os.path.exists(profile_file):
+            os.remove(profile_file)
 
     os.remove(model_path)
 
