@@ -357,6 +357,7 @@ def demo_bitonic_sort(ctx, queue):
 
     # Must be power of 2
     N = 1024
+    assert N & (N - 1) == 0, f"Bitonic sort requires power-of-2 N, got {N}"
     data = np.random.randint(0, 10000, N).astype(np.int32)
 
     print(f"""
